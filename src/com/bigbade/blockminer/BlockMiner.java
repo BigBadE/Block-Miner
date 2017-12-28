@@ -6,6 +6,7 @@ import com.bigbade.blockminer.commands.BlockMinerCmd;
 import com.bigbade.blockminer.config.ConfigSetup;
 import com.bigbade.blockminer.config.MinerList;
 import com.bigbade.blockminer.events.BlockBreak;
+import com.bigbade.blockminer.events.BlockExplode;
 import com.bigbade.blockminer.events.BlockPlace;
 
 public class BlockMiner extends JavaPlugin {
@@ -19,6 +20,7 @@ public class BlockMiner extends JavaPlugin {
 		
 		getServer().getPluginManager().registerEvents(new BlockPlace(), this);
 		getServer().getPluginManager().registerEvents(new BlockBreak(), this);
+		getServer().getPluginManager().registerEvents(new BlockExplode(), this);
 		
 		RunBlockMiner.runBlockMiner();
 	}

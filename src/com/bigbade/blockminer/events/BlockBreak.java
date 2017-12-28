@@ -1,32 +1,41 @@
 package com.bigbade.blockminer.events;
 
-import java.io.File;
+import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
-import com.bigbade.blockminer.config.ConfigSetup;
 import com.bigbade.blockminer.util.BlockMinerList;
+import com.bigbade.blockminer.util.GetConfigMessage;
 
 public class BlockBreak implements Listener {
+	@EventHandler
 	public void blockBreak(BlockBreakEvent event) {
-		for(Location loc : BlockMinerList.getMinerList()) {
-			if(event.getBlock().getLocation().equals(loc)) {
-				File file = ConfigSetup.file();
-				FileConfiguration messageFile = YamlConfiguration
-						.loadConfiguration(file);
-				String itemname = messageFile.getString("MinerName");
-				itemname.replace("&", "§");
-				ItemStack item = new ItemStack(Material.DISPENSER,
-						1);
-				item.getItemMeta().setDisplayName(itemname);
-				event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), item);
+		try {
+			for (Location loc : BlockMinerList.getMinerList()) {
+				if (event.getBlock().getLocation().equals(loc)) {
+					String itemname = GetConfigMessage.getConfigMessage("MinerName");
+					ItemStack item = new ItemStack(Material.DISPENSER, 1);
+					ItemMeta meta = item.getItemMeta();
+					meta.setDisplayName(itemname);
+					item.setItemMeta(meta);
+					ArrayList<Location> list = BlockMinerList.getMinerList();
+					list.remove(loc);
+					BlockMinerList.setMinerList(list);
+					event.getBlock()
+							.getWorld()
+							.dropItemNaturally(event.getBlock().getLocation(),
+									item);
+				}
 			}
+		} catch (ConcurrentModificationException e) {
+
 		}
 	}
 }

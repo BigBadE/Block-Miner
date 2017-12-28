@@ -1,6 +1,8 @@
 package com.bigbade.blockminer;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,67 +25,84 @@ public class RunBlockMiner {
 				BlockMiner.getPlugin(BlockMiner.class), new Runnable() {
 					@Override
 					public void run() {
-						for (Location location : BlockMinerList.getMinerList()) {
-							BlockFace face = ((org.bukkit.material.Dispenser) location
-									.getBlock().getState().getData())
-									.getFacing();
-							Block block = location.getBlock().getRelative(face);
-							BlockFace oppositeface = face.getOppositeFace();
-							if (!BlockMinerList.getMinerList().contains(
-									location.getBlock())) {
-								if (location.getBlock()
-										.getRelative(oppositeface).getState() instanceof InventoryHolder) {
-									InventoryHolder inventoryholder = (InventoryHolder) location
-											.getBlock()
+						try {
+							for (Location location : BlockMinerList
+									.getMinerList()) {
+								if (location.getBlock().getType() != Material.DISPENSER) {
+									ArrayList<Location> list = BlockMinerList
+											.getMinerList();
+									list.remove(location);
+									BlockMinerList.setMinerList(list);
+									continue;
+								}
+								BlockFace face = ((org.bukkit.material.Dispenser) location
+										.getBlock().getState().getData())
+										.getFacing();
+								Block block = location.getBlock().getRelative(
+										face);
+								BlockFace oppositeface = face.getOppositeFace();
+								if (!BlockMinerList.getMinerList().contains(
+										location.getBlock())) {
+									if (location.getBlock()
 											.getRelative(oppositeface)
-											.getState();
-									Inventory inventory = inventoryholder
-											.getInventory();
-									for (ItemStack item : block.getDrops()) {
-										int amount = 0;
-										if (inventory.contains(item)) {
-											amount = item.getAmount();
+											.getState() instanceof InventoryHolder) {
+										InventoryHolder inventoryholder = (InventoryHolder) location
+												.getBlock()
+												.getRelative(oppositeface)
+												.getState();
+										Inventory inventory = inventoryholder
+												.getInventory();
+										for (ItemStack item : block.getDrops()) {
+											int amount = 0;
+											if (inventory.contains(item)) {
+												amount = item.getAmount();
+											}
+											if (inventory.firstEmpty() != -1
+													|| amount > 64
+													&& amount != 0) {
+												inventory.addItem(item);
+											} else {
+												block.getLocation()
+														.getWorld()
+														.dropItemNaturally(
+																block.getLocation(),
+																item);
+											}
+											location.getBlock()
+													.getRelative(face)
+													.setType(Material.AIR);
 										}
-										if (inventory.firstEmpty() != -1
-												|| amount > 64 && amount != 0) {
-											inventory.addItem(item);
-										} else {
+									} else {
+										Collection<ItemStack> items = block
+												.getDrops();
+										block.setType(Material.AIR);
+										for (ItemStack item : items) {
 											block.getLocation()
 													.getWorld()
 													.dropItemNaturally(
 															block.getLocation(),
 															item);
 										}
-										location.getBlock().getRelative(face)
-												.setType(Material.AIR);
 									}
 								} else {
+									block.setType(Material.AIR);
+									String itemname = GetConfigMessage
+											.getConfigMessage("MinerName");
+									ItemStack item = new ItemStack(
+											Material.DISPENSER, 1);
+									ItemMeta meta = item.getItemMeta();
+									meta.setDisplayName(itemname);
+									item.setItemMeta(meta);
 									Collection<ItemStack> items = block
 											.getDrops();
-									block.setType(Material.AIR);
-									for (ItemStack item : items) {
-										block.getLocation()
-												.getWorld()
-												.dropItemNaturally(
-														block.getLocation(),
-														item);
+									for (ItemStack dropitem : items) {
+										location.getWorld().dropItemNaturally(
+												block.getLocation(), dropitem);
 									}
 								}
-							} else {
-								block.setType(Material.AIR);
-								String itemname = GetConfigMessage
-										.getConfigMessage("MinerName");
-								ItemStack item = new ItemStack(
-										Material.DISPENSER, 1);
-								ItemMeta meta = item.getItemMeta();
-								meta.setDisplayName(itemname);
-								item.setItemMeta(meta);
-								Collection<ItemStack> items = block.getDrops();
-								for (ItemStack dropitem : items) {
-									location.getWorld().dropItemNaturally(
-											block.getLocation(), dropitem);
-								}
 							}
+						} catch (ConcurrentModificationException e) {
+
 						}
 					}
 				}, 0L, 20L);
